@@ -1,0 +1,26 @@
+name: Full GeoTIFF suite with GDAL fixtures
+on:
+  push:
+    branches: [ci/ascii-tag-fixtures]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 293a8feec102b5c9ba3bfd70d1e4c8cd7f489b01
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Generate the upstream fixtures
+        run: |
+          docker pull ghcr.io/osgeo/gdal:ubuntu-small-latest
+          docker run --rm -v "$PWD/test/data:/data" ghcr.io/osgeo/gdal:ubuntu-small-latest bash -c 'apt-get update && apt-get -y install imagemagick libtiff-tools wget && cd /data && ./setup_data.sh'
+      - run: npm ci --ignore-scripts
+      - run: npm rebuild
+      - run: npm run build
+      - run: npm test
